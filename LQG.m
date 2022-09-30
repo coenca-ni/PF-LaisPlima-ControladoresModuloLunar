@@ -4,18 +4,20 @@
 % % Aluna: Laís Lima - Matrícula: 1620368ECAN
 % % Professor orientador: Mauro Vasconcellos
 % % Referência principal: Artigo "Three-Dimensional Trajectory Optimization of Soft Lunar Landings from the Parking Orbit with Considerations of the Landing Site" escrito por Bong-Gyun Park and Min-Jea Tahk (2011)
-% % Script: LM_LQG.m
+% % Script: LQG.m
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % Projetando o controlador LQG para o sistema 3D de um módulo lunar 
+
+% Montando a matriz de saídas do sistema
 % % C=eye(7);
 %% C=[1 1e-5 1e-5 1e-5 1e-5 1e-5 1e-5;1e-5 1e-5 1e-5 1 1e-5 1e-5 1e-5];
 % % C=[1 1 1 1 1 1 1];
 % % C3=[1 1e-2 1e-2 1e-2 1e-2 1e-2 1e-2];
-   % C3=[1e3 0 0 0 0 0 0];
+% C3=[1e3 0 0 0 0 0 0];
    close all;
    C2=[1 0 0 0 0 0 0; 
        0 0 0 0 0 0 0;   
-       0 0 0 0 0 0 0];
+       0 0 0 0 0 0 0]; %matriz de ajuste de dimensão
    C=[1e3 0 0 0 0 0 0; 
       0 0 0 0 0 0 0;   
       0 0 0 0 0 0 0;
@@ -23,9 +25,8 @@
       0 0 0 0 0 0 0;
       0 0 0 0 0 0 0;
       0 0 0 0 0 0 0     
-     ]; %sensor de posição (r), latitude (theta) e massa 
-% %                     % 2x7 7x1 -> supondo que temos sensores de posição e massa
-% 
+     ]; %considerando apenas o sensor de posição (r) 
+                   
   dimC=size(C);
   linC=dimC(1,1);
   colC=dimC(1,2);
@@ -39,7 +40,9 @@
 %Q1=.03; Q2=1; Q3=1; Q4=4500; Q5=10; Q6=10; Q7=.5;
 %Q1=.09; Q2=1; Q3=13.5; Q4=5; Q5=10; Q6=10; Q7=.5; % muito muito bom (mas vr
 %ainda tá ruim no final)
- Q1=.0485; Q1=.049;  Q1=.050515; Q1=0.00575; Q2=1; Q3=13.5; Q4=5e-3; Q5=10; Q6=10; Q7=.5;
+% % % % % % %  Q1=.0485; Q1=.049;  Q1=.050515; Q1=0.00575; Q2=1; Q3=13.5; Q4=5e-3; Q5=10; Q6=10; Q7=.5; %último que foi para o texto
+Q1=0.04942775; Q2=1; Q3=55; Q4=5e-3; Q5=10; Q6=10; Q7=.5;
+
 %Q1=1000; Q2=1; Q3=1; Q4=1000; Q5=1; Q6=1; Q7=1;
 Q=[Q1 0 0 0 0 0 0;
    0 Q2 0 0 0 0 0;
@@ -51,7 +54,7 @@ Q=[Q1 0 0 0 0 0 0;
  Ru= diag([1,1,500]);
 %Ru= diag([1,1,1]);
 
-% informações sobre valores válidos obtidos do código LM_DynamicsOptimized %%%%%
+% Informações sobre valores válidos obtidos do código LM_DynamicsOptimized %%%%%
 x_valido=[R_valido THETA_valido PHI_valido VR_valido VTHETA_valido VPHI_valido M_valido];
 
 %%% Covariâncias dos Ruídos do Processo e de Medição %%%%%%%
@@ -118,7 +121,7 @@ Kk=1;
 % xhatk-1=x(0) condição inicial
  Pk=Qk;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%% Discretização de Euler %%%%%%%%%%%%%%%%
 
 %for j=1:round((length(A_valida)/(7*inc)))-inc
 for j=1:round(length(T_valido))-inc
@@ -245,83 +248,93 @@ for j=1:round(length(T_valido))-inc
     
     %end
 end
+
 %%% Plot dos Estados %%%%%%%%
 
 figure
-plot(T,R/1000,'m')
+plot(T,R/1000,'m',T_PLOT,Y_PLOT(:,1),'b')
 xlabel('t (s)')
 ylabel('r (km)')
-title('Posição Radial - LQG')
+legend('Distância radial com LQG','Distância radial em malha aberta')
+%title('Posição Radial - LQG')
 %grid
 
-figure
-plot(TREF,REF(1,:)/1000,'r')
-xlabel('t (s)')
-ylabel('r em Km')
-title('Posição Radial da Referência - LQG')
+% figure
+% plot(TREF,REF(1,:)/1000,'r')
+% xlabel('t (s)')
+% ylabel('r em Km')
+% title('Posição Radial da Referência - LQG')
+ 
+% figure
+% plot(T,((R/1000)-1737.4),'m')
+% xlabel('t (s)')
+% ylabel('Altitude (km)')
+% title('Altitude - LQG')
+% %grid
 
 figure
-plot(T,((R/1000)-1737.4),'m')
-xlabel('t (s)')
-ylabel('Altitude (km)')
-title('Altitude - LQG')
-%grid
-
-figure
-plot(T,THETA*180/pi,'m')
+plot(T,THETA*180/pi,'m',T_PLOT,Y_PLOT(:,2)*180/pi,'b')
 xlabel('t (s)')
 ylabel('theta (°)')
-title('Longitude - LQG')
+legend('Longitude com LQG','Longitude em malha aberta')
+%title('Longitude - LQG')
 %grid
 
 figure
-plot(T,PHI*180/pi,'m')
+plot(T,PHI*180/pi,'m',T_PLOT,Y_PLOT(:,3)*180/pi,'b')
 xlabel('t (s)')
 ylabel('phi (°)')
-title('Latitude - LQG')
+legend('Latitude com LQG','Latitude em malha aberta')
+%title('Latitude - LQG')
 %grid
 
 figure
-plot(T,VR,'m')
+plot(T,VR,'m',T_PLOT,Y_PLOT(:,4)*1000,'b')
 xlabel('t (s)')
 ylabel('vr (m/s)')
-title('Velocidade Radial - LQG')
+legend('Velocidade radial com LQG','Velocidade radial em malha aberta')
+%title('Velocidade Radial - LQG')
 %grid
 
 figure
-plot(T,VTHETA,'m')
+plot(T,VTHETA,'m',T_PLOT,Y_PLOT(:,5)*1000,'b')
 xlabel('t (s)')
 ylabel('vtheta (m/s)')
-title('Velocidade Longitudinal - LQG')
+legend('Velocidade longitudinal com LQG','Velocidade longitudinal em malha aberta')
+%title('Velocidade Longitudinal - LQG')
 %grid
 
 figure
-plot(T,VPHI,'m')
+plot(T,VPHI,'m',T_PLOT,Y_PLOT(:,6)*1000,'b')
 xlabel('t (s)')
 ylabel('vphi (m/s)')
-title('Velocidade Latitudinal - LQG')
+legend('Velocidade latitudinal com LQG','Velocidade latitudinal em malha aberta')
+%title('Velocidade Latitudinal - LQG')
 %grid
 
 figure
-plot(T,M,'m')
+plot(T,M,'m',T_PLOT,Y_PLOT(:,7),'b')
 xlabel('t (s)')
 ylabel('m (kg)')
-title('Massa do Módulo - LQG')
+legend('Fluxo de massa com LQG','Fluxo de massa em malha aberta')
+%title('Massa do Módulo - LQG')
 %grid
 
 figure
-plot(THETA*180/pi,PHI*180/pi,'m')
+plot(THETA*180/pi,PHI*180/pi,'m',Y_PLOT(:,2)*180/pi,Y_PLOT(:,3)*180/pi,'b')
 xlabel('Longitude em graus')
 ylabel('Latitude em graus')
+legend('LQG','Malha aberta')
 title('Gráfico das Fases - Latitude x Longitude')
-%grid
-
+% %grid
+ 
 figure
-plot3(PHI*180/pi, -THETA*180/pi, (R/1000)-1737.4,'m')
+plot3(PHI*180/pi, -THETA*180/pi, (R/1000)-1737.4,'m',Y_PLOT(:,3)*180/pi,-Y_PLOT(:,2)*180/pi,Y_PLOT(:,1)-1737.4,'b')
 xlabel('Longitude em graus')
 ylabel('Latitude em graus')
 zlabel('Altitude em Km')
+legend('LQG','Malha aberta')
 title('Gráfico das Fases - Altitude x Latitude x Longitude')
-%grid
+% %grid
 
-vpa([(min(R/1000)); (R(1,end)/1000)])
+%vpa([(min(R/1000)); (R(1,end)/1000)])
